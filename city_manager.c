@@ -262,7 +262,33 @@ void remove_report(const char *district_name, int report_id, const char *role) {
     printf("Report removed\n");
 }
 
-// print usage
+void update_threshold(const char *district_name, int value, const char *role) {
+    if (strcmp(role, "manager") != 0) {
+        printf("managers only.\n");
+        return;
+    }
+
+    char filepath[256];
+    snprintf(filepath, sizeof(filepath), "%s/district.cfg", district_name);
+
+    struct stat st;
+    if (stat(filepath, &st) == -1) return;
+
+    if ((st.st_mode & 0777) != 0640) {
+        printf("Permissions changed,refusing to update.\n");
+        return;
+    }
+
+    int fd = open(filepath, O_WRONLY | O_TRUNC);
+    if (fd != -1) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d\n", value);
+        write(fd, buf, strlen(buf));
+        close(fd);
+        printf("Threshold updated to %d\n", value);
+    }
+}
+
 void usage() {
     printf("Usage: city_manager --role <inspector|manager> --user <name> [operation] [args...]\n");
 }
@@ -326,7 +352,9 @@ int main(int argc, char *argv[]) {
         remove_report(district, report_id, role);
         log_operation(district, role, user, "remove_report");
     } else if (strcmp(command, "--update_threshold") == 0) {
-        printf("STAI ASA NU-I GATA\n");
+        if (report_id == -1) return 1;
+        update_threshold(district, report_id, role);
+        log_operation(district, role, user, "update_threshold");
     } else if (strcmp(command, "--filter") == 0) {
         printf("why? :(( you don't need no filters bbg\n");
     } else {
