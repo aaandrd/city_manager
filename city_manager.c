@@ -7,6 +7,9 @@
 #include <sys/types.h>
 #include <time.h>
 
+//default threshold severity for the district.cfg files
+#define DEFAULT_THRESHOLD "2"
+
 typedef struct {
     int id;
     char inspector[32];
@@ -78,8 +81,7 @@ void setup_config_file(const char *district_name) {
         int fd = open(filepath, O_CREAT | O_WRONLY, 0640);
         if (fd != -1) {
             chmod(filepath, 0640);
-            const char *default_threshold = "2\n";
-            write(fd, default_threshold, strlen(default_threshold));
+            write(fd, DEFAULT_THRESHOLD, strlen(DEFAULT_THRESHOLD));
             close(fd);
         }
     }
@@ -98,7 +100,8 @@ void log_operation(const char *district_name, const char *role, const char *user
     if (fd != -1) {
         chmod(filepath, 0644);
         char log_entry[256];
-        snprintf(log_entry, sizeof(log_entry), "%ld\n%s\n%s %s\n", time(NULL), user, role, action);
+        long int timestamp = time(NULL);
+        snprintf(log_entry, sizeof(log_entry), "%s%s\n%s %s\n", ctime(&timestamp), user, role, action);
         write(fd, log_entry, strlen(log_entry));
         close(fd);
     }
@@ -171,10 +174,10 @@ void list_reports(const char *district_name) {
     char perms[10];
     mode_to_string(st.st_mode, perms);
 
-    printf("--- File Info ---\n");
+    printf("=== File Info ===\n");
     printf("Permissions: %s\nSize: %ld bytes\nLast Modified: %s",
            perms, st.st_size, ctime(&st.st_mtime));
-    printf("-----------------\n");
+    printf("=================\n");
 
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) return;
@@ -219,6 +222,44 @@ void view_report(const char *district_name, int report_id) {
         printf("Report ID %d not found.\n", report_id);
     }
     close(fd);
+}
+
+// remove one report and shift the rest
+void remove_report(const char *district_name, int report_id, const char *role) {
+    if (strcmp(role, "manager") != 0) {
+        printf("managers only.\n");
+        return;
+    }
+
+    char filepath[256];
+    snprintf(filepath, sizeof(filepath), "%s/reports.dat", district_name);
+
+    int fd = open(filepath, O_RDWR);
+    if (fd == -1) return;
+
+    struct stat st;
+    fstat(fd, &st);
+    int total = st.st_size / sizeof(Report);
+
+    if (report_id >= total || report_id < 0) {
+        printf("Bad id.\n");
+        close(fd);
+        return;
+    }
+    Report temp;
+    // shift everything over by one
+    for (int i = report_id + 1; i < total; i++) {
+        lseek(fd, i * sizeof(Report), SEEK_SET);
+        read(fd, &temp, sizeof(Report));
+        temp.id = i - 1; // fix the id
+        lseek(fd, (i - 1) * sizeof(Report), SEEK_SET);
+        write(fd, &temp, sizeof(Report));
+    }
+
+    // rremove the duplicate end
+    ftruncate(fd, (total - 1) * sizeof(Report));
+    close(fd);
+    printf("Report removed\n");
 }
 
 // print usage
@@ -280,8 +321,15 @@ int main(int argc, char *argv[]) {
         }
         view_report(district, report_id);
         log_operation(district, role, user, "view");
-    }
-    else {
+    } else if (strcmp(command, "--remove_report") == 0) {
+        if (report_id == -1) return 1;
+        remove_report(district, report_id, role);
+        log_operation(district, role, user, "remove_report");
+    } else if (strcmp(command, "--update_threshold") == 0) {
+        printf("STAI ASA NU-I GATA\n");
+    } else if (strcmp(command, "--filter") == 0) {
+        printf("why? :(( you don't need no filters bbg\n");
+    } else {
         printf("Unknown command: %s\n", command);
         usage();
     }
