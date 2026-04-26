@@ -166,28 +166,42 @@ void view_report(const char *district_name, int report_id) {
     close(fd);
 }
 
-// remove one report and shift the rest
 void remove_report(const char *district_name, int report_id, const char *role) {
     if (strcmp(role, "manager") != 0) {
-        printf("managers only.\n");
+        printf("Error: Only managers can remove reports.\n");
         return;
     }
 
     char filepath[256];
     snprintf(filepath, sizeof(filepath), "%s/reports.dat", district_name);
 
+    struct stat file_stat;
+    if (stat(filepath, &file_stat) == -1) {
+        printf("Error: Could not stat %s to verify permissions.\n", filepath);
+        return;
+    }
+
+    if (!(file_stat.st_mode & S_IWUSR)) {
+        printf("Access Denied: The manager role requires owner-write permission on %s.\n", filepath);
+        return;
+    }
+
     int fd = open(filepath, O_RDWR);
-    if (fd == -1) return;
+    if (fd == -1) {
+        perror("Failed to open reports file");
+        return;
+    }
 
     struct stat st;
     fstat(fd, &st);
     int total = st.st_size / sizeof(Report);
 
     if (report_id >= total || report_id < 0) {
-        printf("Bad id.\n");
+        printf("Error: Bad report ID.\n");
         close(fd);
         return;
     }
+
     Report temp;
     // shift everything over by one
     for (int i = report_id + 1; i < total; i++) {
@@ -198,36 +212,47 @@ void remove_report(const char *district_name, int report_id, const char *role) {
         write(fd, &temp, sizeof(Report));
     }
 
-    // rremove the duplicate end
+    // remove the duplicate end
     ftruncate(fd, (total - 1) * sizeof(Report));
     close(fd);
-    printf("Report removed\n");
+    printf("Report %d successfully removed.\n", report_id);
 }
 
 void update_threshold(const char *district_name, int value, const char *role) {
     if (strcmp(role, "manager") != 0) {
-        printf("managers only.\n");
+        printf("Error: Only managers can update the threshold.\n");
         return;
     }
 
     char filepath[256];
     snprintf(filepath, sizeof(filepath), "%s/district.cfg", district_name);
 
-    struct stat st;
-    if (stat(filepath, &st) == -1) return;
-
-    if ((st.st_mode & 0777) != 0640) {
-        printf("Permissions changed,refusing to update.\n");
+    struct stat file_stat;
+    if (stat(filepath, &file_stat) == -1) {
+        printf("Error: Could not stat %s.\n", filepath);
         return;
     }
 
+    if (!(file_stat.st_mode & S_IWUSR)) {
+        printf("Access Denied: The manager role requires owner-write permission on %s.\n", filepath);
+        return;
+    }
+
+    if ((file_stat.st_mode & 0777) != 0640) {
+        printf("Permissions on %s have been tampered with (expected 640). Refusing to update.\n", filepath);
+        return;
+    }
+
+    //safe to update
     int fd = open(filepath, O_WRONLY | O_TRUNC);
     if (fd != -1) {
         char buf[32];
         snprintf(buf, sizeof(buf), "%d\n", value);
         write(fd, buf, strlen(buf));
         close(fd);
-        printf("Threshold updated to %d\n", value);
+        printf("Threshold successfully updated to %d\n", value);
+    } else {
+        perror("Failed to open district.cfg for writing");
     }
 }
 
@@ -250,4 +275,43 @@ void filter_reports(const char *district_name, int condition_count, char **condi
         if (ok) printf("ID: %d | Cat: %s | Sev: %d\n", r.id, r.category, r.severity);
     }
     close(fd);
+}
+
+void manage_symlink(const char *district_name) {
+    char target[256];
+    char linkpath[256];
+    snprintf(target, sizeof(target), "%s/reports.dat", district_name);
+    snprintf(linkpath, sizeof(linkpath), "active_reports-%s", district_name);
+
+    struct stat lst, st;
+
+    if (lstat(linkpath, &lst) == -1) {
+        if (symlink(target, linkpath) == 0) {
+            printf("Created symlink: %s\n", linkpath);
+        } else {
+            perror("Failed to create symlink");
+        }
+    }
+
+    // look in current directory for dangling active_reports-* links
+    DIR *dir = opendir(".");
+    if (dir == NULL) {
+        perror("Could not open current directory for symlink scanning");
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        // look for files starting with "active_reports-"
+        if (strncmp(entry->d_name, "active_reports-", 15) == 0) {
+            // check if its actually a symlink
+            if (lstat(entry->d_name, &lst) == 0 && S_ISLNK(lst.st_mode)) {
+                //check if target file exists
+                if (stat(entry->d_name, &st) == -1) {
+                    printf("Warning: Dangling symlink detected for %s! Target is missing.\n", entry->d_name);
+                }
+            }
+        }
+    }
+    closedir(dir);
 }

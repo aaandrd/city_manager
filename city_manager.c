@@ -1,7 +1,4 @@
 #include "city_manager.h"
-#include "operations.c"
-#include "helpers.c"
-
 
 void usage() {
     printf("Usage: city_manager --role <inspector|manager> --user <name> [operation] [args...]\n");
@@ -18,6 +15,7 @@ int main(int argc, char *argv[]) {
     char *command = NULL;
     char *district = NULL;
     int report_id = -1;
+    int threshold_val = -1;
 
     // parse args
     for (int i = 1; i < argc; i++) {
@@ -31,6 +29,7 @@ int main(int argc, char *argv[]) {
                 district = argv[++i];
                 if (i + 1 < argc && argv[i+1][0] != '-') {
                     report_id = atoi(argv[++i]);
+                    threshold_val = atoi(argv[++i]);
                 }
             }
         }
@@ -48,6 +47,7 @@ int main(int argc, char *argv[]) {
         setup_district_dir(district);
         setup_config_file(district);
         add_report(district, user);
+        manage_symlink(district);
         log_operation(district, role, user, "add");
     }
     else if (strcmp(command, "--list") == 0) {
@@ -66,8 +66,8 @@ int main(int argc, char *argv[]) {
         remove_report(district, report_id, role);
         log_operation(district, role, user, "remove_report");
     } else if (strcmp(command, "--update_threshold") == 0) {
-        if (report_id == -1) return 1;
-        update_threshold(district, report_id, role);
+        if (threshold_val == -1) return 1;
+        update_threshold(district, threshold_val, role);
         log_operation(district, role, user, "update_threshold");
     } else if (strcmp(command, "--filter") == 0) {
         int start_idx = 0;
