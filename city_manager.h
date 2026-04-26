@@ -33,5 +33,8 @@ void list_reports(const char *district_name);
 void view_report(const char *district_name, int report_id);
 void remove_report(const char *district_name, int report_id, const char *role);
 void update_threshold(const char *district_name, int value, const char *role);
+int parse_condition(const char *input, char *field, char *op, char *value);
+int match_condition(Report *r, const char *field, const char *op, const char *value);
+void filter_reports(const char *district_name, int condition_count, char **conditions);
 
 #endif //CITY_MANAGER_CITY_MANAGER_H

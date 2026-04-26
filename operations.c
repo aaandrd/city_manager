@@ -230,3 +230,24 @@ void update_threshold(const char *district_name, int value, const char *role) {
         printf("Threshold updated to %d\n", value);
     }
 }
+
+void filter_reports(const char *district_name, int condition_count, char **conditions) {
+    char filepath[256];
+    snprintf(filepath, sizeof(filepath), "%s/reports.dat", district_name);
+
+    int fd = open(filepath, O_RDONLY);
+    if (fd == -1) return;
+
+    Report r;
+    while (read(fd, &r, sizeof(Report)) == sizeof(Report)) {
+        int ok = 1;
+        for (int i = 0; i < condition_count; i++) {
+            char f[32], o[4], v[32];
+            if (parse_condition(conditions[i], f, o, v)) {
+                if (!match_condition(&r, f, o, v)) ok = 0;
+            }
+        }
+        if (ok) printf("ID: %d | Cat: %s | Sev: %d\n", r.id, r.category, r.severity);
+    }
+    close(fd);
+}

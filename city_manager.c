@@ -1,4 +1,7 @@
 #include "city_manager.h"
+#include "operations.c"
+#include "helpers.c"
+
 
 void usage() {
     printf("Usage: city_manager --role <inspector|manager> --user <name> [operation] [args...]\n");
@@ -67,7 +70,16 @@ int main(int argc, char *argv[]) {
         update_threshold(district, report_id, role);
         log_operation(district, role, user, "update_threshold");
     } else if (strcmp(command, "--filter") == 0) {
-        printf("why? :(( you don't need no filters bbg\n");
+        int start_idx = 0;
+        for (int i = 1; i < argc; i++) {
+            if (strcmp(argv[i], "--filter") == 0) {
+                start_idx = i + 2;
+                break;
+            }
+        }
+        int num_cond = argc - start_idx;
+        filter_reports(district, num_cond, &argv[start_idx]);
+        log_operation(district, role, user, "filter");
     } else {
         printf("Unknown command: %s\n", command);
         usage();
