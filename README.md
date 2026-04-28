@@ -32,11 +32,4 @@ city_manager --role [manager/inspector] --user [username] --add [district_name]
 city_manager --role [manager/inspector] --user [username] --list [district_name]
 city_manager --role [manager/inspector] --user [username] --remove_report [district_name] [report_id]
 city_manager --role [manager/inspector] --user [username] --filter [district_name] [field:operator:value]
-
-
-
-
-
-
-
-m
+```
