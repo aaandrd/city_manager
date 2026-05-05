@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <dirent.h>
+#include <sys/wait.h>
 
 #define DEFAULT_THRESHOLD "2"
 
@@ -38,5 +39,6 @@ int parse_condition(const char *input, char *field, char *op, char *value);
 int match_condition(Report *r, const char *field, const char *op, const char *value);
 void filter_reports(const char *district_name, int condition_count, char **conditions);
 void manage_symlink(const char *district_name);
+void remove_district(const char *district_name, const char *role);
 
 #endif //CITY_MANAGER_CITY_MANAGER_H

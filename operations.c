@@ -315,3 +315,63 @@ void manage_symlink(const char *district_name) {
     }
     closedir(dir);
 }
+
+void remove_district(const char *district_name, const char *role) {
+    //command is manager role only
+    if (strcmp(role, "manager") != 0) {
+        printf("Error: Only managers can remove an entire district.\n");
+        return;
+    }
+
+    //check if the district directory exists
+    struct stat st;
+    if (stat(district_name, &st) == -1 || !S_ISDIR(st.st_mode)) {
+        printf("Error: District directory '%s' does not exist.\n", district_name);
+        return;
+    }
+
+    //delete the corresponding active_reports-* symlink
+    char linkpath[256];
+    snprintf(linkpath, sizeof(linkpath), "active_reports-%s", district_name);
+    if (unlink(linkpath) == 0) {
+        printf("Removed symlink: %s\n", linkpath);
+    } else {
+        //symlink doesnt exist
+        perror("Note: Symlink removal skipped or failed");
+    }
+
+    //create a child process
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        return;
+    }
+
+    if (pid == 0) {
+        // child process execute 'rm -rf <district_directory>'
+        // execlp searches the PATH for 'rm'
+        execlp("rm", "rm", "-rf", district_name, (char *)NULL);
+
+        // execlp returns, it failed
+        perror("Failed to execute rm command");
+        exit(1);
+    } else {
+        // parent process wait for the child
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status)) {
+            if (WEXITSTATUS(status) == 0) {
+                printf("District '%s' and all its contents successfully removed.\n", district_name);
+            } else {
+                //finished, but 'rm' failed
+                printf("Error: Failed to remove district. Exit code: %d\n", WEXITSTATUS(status));
+            }
+
+        } else {
+            //rm command crashed or was killed unexpectedly
+            printf("Error: The deletion process was interrupted or crashed.\n");
+        }
+    }
+}

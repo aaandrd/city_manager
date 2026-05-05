@@ -80,6 +80,9 @@ int main(int argc, char *argv[]) {
         int num_cond = argc - start_idx;
         filter_reports(district, num_cond, &argv[start_idx]);
         log_operation(district, role, user, "filter");
+    } else if (strcmp(command, "--remove_district") == 0) {
+        remove_district(district, role);
+        log_operation(district, role, user, "remove_district");
     } else {
         printf("Unknown command: %s\n", command);
         usage();
