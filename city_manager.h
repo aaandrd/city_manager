@@ -11,6 +11,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 #define DEFAULT_THRESHOLD "2"
 
@@ -40,5 +41,6 @@ int match_condition(Report *r, const char *field, const char *op, const char *va
 void filter_reports(const char *district_name, int condition_count, char **conditions);
 void manage_symlink(const char *district_name);
 void remove_district(const char *district_name, const char *role);
+int notify_monitor();
 
 #endif //CITY_MANAGER_CITY_MANAGER_H

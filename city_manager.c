@@ -48,7 +48,21 @@ int main(int argc, char *argv[]) {
         setup_config_file(district);
         add_report(district, user);
         manage_symlink(district);
-        log_operation(district, role, user, "add");
+
+        //phase 2: monitor notification
+        int status = notify_monitor();
+        char action_msg[128];
+
+        if (status == 0) {
+            snprintf(action_msg, sizeof(action_msg), "add (Monitor notified)");
+            printf("Notification sent to monitor successfully.\n");
+        } else {
+            snprintf(action_msg, sizeof(action_msg),
+                     "add (Error: Monitor could not be informed, code: %d)", status);
+            printf("Warning: Could not inform monitor (Error Code %d).\n", status);
+        }
+
+        log_operation(district, role, user, action_msg);
     }
     else if (strcmp(command, "--list") == 0) {
         list_reports(district);

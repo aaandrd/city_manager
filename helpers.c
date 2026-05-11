@@ -79,3 +79,36 @@ int match_condition(Report *r, const char *field, const char *op, const char *va
 
     return 0; // Return 0 if the field or operator is invalid
 }
+
+#include "city_manager.h"
+
+//PHASE II: logic to notify the monitor program
+//returns 0 on success, or a negative value on error
+int notify_monitor() {
+    int fd = open(".monitor_pid", O_RDONLY);
+    if (fd == -1) {
+        return -1; //monitor PID file not found
+    }
+
+    char buf[32];
+    ssize_t bytes_read = read(fd, buf, sizeof(buf) - 1);
+    close(fd);
+
+    if (bytes_read <= 0) {
+        return -2; //file empty or read error
+    }
+
+    buf[bytes_read] = '\0';
+    pid_t monitor_pid = (pid_t)atoi(buf);
+
+    if (monitor_pid <= 0) {
+        return -3; //invalid PID format
+    }
+
+    //send SIGUSR1 to the monitor process
+    if (kill(monitor_pid, SIGUSR1) == 0) {
+        return 0;
+    } else {
+        return -4; //signal delivery failed (process might not exist)
+    }
+}
