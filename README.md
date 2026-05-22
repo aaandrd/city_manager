@@ -75,7 +75,7 @@ Started by running `./city_hub`. Once inside the prompt, you can use the followi
 ./city_manager --role inspector --user bob --list downtown
 
 # Filter reports with a severity of 2 or higher
-./city_manager --role inspector --user bob --filter downtown severity:>=:2
+./city_manager --role inspector --user bob --filter downtown "severity:>=:2"
 
 # Remove a specific report
 ./city_manager --role manager --user alice --remove_report downtown 17
