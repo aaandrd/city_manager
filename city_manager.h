@@ -13,7 +13,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-#define DEFAULT_THRESHOLD "2"
+#define DEFAULT_THRESHOLD "2" //default severity threshold
 
 typedef struct {
     int id;
@@ -42,5 +42,15 @@ void filter_reports(const char *district_name, int condition_count, char **condi
 void manage_symlink(const char *district_name);
 void remove_district(const char *district_name, const char *role);
 int notify_monitor();
+
+//ANSI COLOR MACROS
+#define RESET       "\033[0m"
+#define BOLD        "\033[1m"
+
+//custom RGB colors
+#define C_ADD              "\033[38;2;143;255;227m" // Cyan/Green
+#define C_LIST             "\033[38;2;220;152;255m" // Purple
+#define C_VIEW             "\033[38;2;255;154;172m" // Pink
+#define C_FILTER           "\033[38;2;250;237;120m" // Yellow
 
 #endif //CITY_MANAGER_CITY_MANAGER_H

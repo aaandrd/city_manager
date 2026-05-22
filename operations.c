@@ -66,26 +66,26 @@ void add_report(const char *district_name, const char *inspector_name) {
     strncpy(new_report.inspector, inspector_name, sizeof(new_report.inspector) - 1);
     new_report.timestamp = time(NULL);
 
-    printf("X: ");
+    printf(C_ADD BOLD "X: " RESET);
     if (scanf("%f", &new_report.latitude) != 1) new_report.latitude = 0.0f;
-    printf("Y: ");
+    printf(C_ADD BOLD "Y: " RESET);
     if (scanf("%f", &new_report.longitude) != 1) new_report.longitude = 0.0f;
 
     int c;
     while ((c = getchar()) != '\n' && c != EOF); // clear buffer
 
-    printf("Category (road/lighting/flooding/other): ");
+    printf(C_ADD BOLD "Category (road/lighting/flooding/other): " RESET);
     if (fgets(new_report.category, sizeof(new_report.category), stdin)) {
         new_report.category[strcspn(new_report.category, "\n")] = 0;
     }
 
-    printf("Severity level (1/2/3): ");
+    printf(C_ADD BOLD "Severity level (1/2/3): " RESET);
     if (scanf("%d", &new_report.severity) != 1) {
         new_report.severity = 1;
     }
     while ((c = getchar()) != '\n' && c != EOF); // clear buffer
 
-    printf("Description: ");
+    printf(C_ADD BOLD "Description: " RESET);
     if (fgets(new_report.description, sizeof(new_report.description), stdin)) {
         new_report.description[strcspn(new_report.description, "\n")] = 0;
     }
@@ -98,7 +98,7 @@ void add_report(const char *district_name, const char *inspector_name) {
     }
 
     if (write(fd, &new_report, sizeof(Report)) == sizeof(Report)) {
-        printf("Successfully saved report ID %d!\n", new_report.id);
+        printf(C_ADD BOLD "Successfully saved report ID %d!\n" RESET, new_report.id);
     }
     close(fd);
 }
@@ -116,18 +116,18 @@ void list_reports(const char *district_name) {
     char perms[10];
     mode_to_string(st.st_mode, perms);
 
-    printf("=== File Info ===\n");
+    printf(C_LIST BOLD "================== File Info ==================\n");
     printf("Permissions: %s\nSize: %ld bytes\nLast Modified: %s",
            perms, st.st_size, ctime(&st.st_mtime));
-    printf("=================\n");
+    printf("================================================\n");
 
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) return;
 
     Report r;
-    printf("%-5s | %-15s | %-10s | %-10s\n", "ID", "Inspector", "Category", "Severity");
+    printf("%-5s | %-15s | %-10s | %-10s\n", "ID", "Inspector", "Category", "Severity" RESET);
     while (read(fd, &r, sizeof(Report)) == sizeof(Report)) {
-        printf("%-5d | %-15s | %-10s | %-10d\n", r.id, r.inspector, r.category, r.severity);
+        printf(C_LIST "%-5d | %-15s | %-10s | %-10d\n", r.id, r.inspector, r.category, r.severity);
     }
     close(fd);
 }
@@ -152,14 +152,14 @@ void view_report(const char *district_name, int report_id) {
 
     Report r;
     if (read(fd, &r, sizeof(Report)) == sizeof(Report)) {
-        printf("\n--- Report Details (ID: %d) ---\n", r.id);
-        printf("Inspector: %s\n", r.inspector);
+        printf(C_VIEW BOLD "\n--- Report Details (ID: %d) ---\n" RESET, r.id);
+        printf(C_VIEW "Inspector: %s\n", r.inspector);
         printf("Location: X: %.2f, Y: %.2f\n", r.latitude, r.longitude);
         printf("Category: %s\n", r.category);
         printf("Severity: %d\n", r.severity);
         printf("Timestamp: %s", ctime(&r.timestamp));
-        printf("Description: %s\n", r.description);
-        printf("-------------------------------\n");
+        printf("Description: %s\n" RESET, r.description);
+        printf(C_VIEW BOLD "-------------------------------\n" RESET);
     } else {
         printf("Report ID %d not found.\n", report_id);
     }
@@ -272,7 +272,7 @@ void filter_reports(const char *district_name, int condition_count, char **condi
                 if (!match_condition(&r, f, o, v)) ok = 0;
             }
         }
-        if (ok) printf("ID: %d | Cat: %s | Sev: %d\n", r.id, r.category, r.severity);
+        if (ok) printf(C_FILTER "ID: %d | Cat: %s | Sev: %d\n" RESET, r.id, r.category, r.severity);
     }
     close(fd);
 }

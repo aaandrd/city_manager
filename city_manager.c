@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
                 district = argv[++i];
                 if (i + 1 < argc && argv[i+1][0] != '-') {
                     report_id = atoi(argv[++i]);
-                    threshold_val = atoi(argv[++i]);
+                    threshold_val = report_id;
                 }
             }
         }
