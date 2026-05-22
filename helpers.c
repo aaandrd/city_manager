@@ -15,24 +15,33 @@ void mode_to_string(mode_t mode, char *str) {
 
 int check_write_permission(const char *filepath, const char *role) {
     struct stat st;
+    
+    //the file doesn't exist yet
     if (stat(filepath, &st) == -1) {
-        return 1; // let it create
+        //later fix to prevent inspectors from bypassing security by creating the log file
+        if (strcmp(role, "inspector") == 0 && strstr(filepath, "logged_district") != NULL) {
+            printf(C_ERROR "Error: Inspector does not have permission to create or write to %s.\n" RESET, filepath);
+            return 0; 
+        }
+        return 1; 
     }
 
+    //if the file already exists, check its permissions
     if (strcmp(role, "manager") == 0) {
         if (!(st.st_mode & S_IWUSR)) {
-            printf("Error: Manager does not have owner-write permission for %s.\n", filepath);
+            printf(C_ERROR "Error: Manager does not have owner-write permission for %s.\n" RESET, filepath);
             return 0;
         }
     } else if (strcmp(role, "inspector") == 0) {
         if (!(st.st_mode & S_IWGRP)) {
-            printf("Error: Inspector does not have group-write permission for %s.\n", filepath);
+            printf(C_ERROR "Error: Inspector does not have group-write permission for %s.\n" RESET, filepath);
             return 0;
         }
     } else {
-        printf("Error: Unknown role.\n");
+        printf(C_ERROR "Error: Unknown role.\n" RESET);
         return 0;
     }
+    
     return 1;
 }
 
