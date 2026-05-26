@@ -47,16 +47,10 @@ int notify_monitor();
 #define RESET       "\033[0m"
 #define BOLD        "\033[1m"
 
-//custom RGB colors
 #define C_ADD              "\033[38;2;143;255;227m" // Cyan/Green
 #define C_LIST             "\033[38;2;220;152;255m" // Purple
 #define C_VIEW             "\033[38;2;255;154;172m" // Pink
 #define C_FILTER           "\033[38;2;250;237;120m" // Yellow
-
-
 #define C_ERROR     "\033[31m" // Standard Red
-#define C_SUCCESS   "\033[32m" // Standard Green
-#define C_WARN      "\033[33m" // Standard Yellow
-#define C_INFO      "\033[36m" // Standard Cyan
 
 #endif //CITY_MANAGER_CITY_MANAGER_H

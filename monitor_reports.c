@@ -1,62 +1,76 @@
 #include "monitor_reports.h"
-int n = 0;
+#include "city_manager.h"
 
-void set_handler(int signum, void (*handler)(int)) {
-    struct sigaction sa;
-    sa.sa_handler = handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(signum, &sa, NULL);
-}
+int counter = 0; 
 
-void monitor_ends(int sig) {
-    (void)sig;
-    printf("INFO: Monitor received SIGINT. Shutting down.\n");
+void monitor_ends (int sig) {
+    printf(C_FILTER "INFO: Monitor received SIGINT. Shutting down.\n" RESET);
+    fflush(stdout);
     unlink(".monitor_pid");
     exit(0);
 }
 
-void monitor_writes(int sig) {
-    (void)sig;
-    printf("EVENT: Monitor received SIGUSR1 (Count: %d)\n", ++n);
+void monitor_writes (int sig) {
+    counter++;
+    printf(C_LIST "EVENT: Monitor received SIGUSR1 (Count: %d)\n" RESET, counter);
+    fflush(stdout);
 }
 
-int main() {
-    //disable stdout buffering 
-    setvbuf(stdout, NULL, _IONBF, 0);
+int main () {
+    int fd_check;
+    int fd;
+    int bytes;
+    char buf[32];
+    char pid_str[32];
+    struct sigaction sa_int, sa_usr;
 
-    //check if another monitor is already running
-    int fd_check = open(".monitor_pid", O_RDONLY);
+    // check if another monitor is already running (0 is O_RDONLY)
+    fd_check = open(".monitor_pid", 0); 
     if (fd_check >= 0) {
-        char buf[32];
-        ssize_t bytes = read(fd_check, buf, sizeof(buf) - 1);
+        bytes = read(fd_check, buf, 31);
         if (bytes > 0) {
             buf[bytes] = '\0';
-            printf("ERROR: Another monitor is already running with PID: %d\n", atoi(buf));
+            printf(C_ERROR "ERROR: Another monitor is already running with PID: %d\n" __REGISTER_PREFIX__, atoi(buf));
         }
         close(fd_check);
         exit(1); 
     }
 
-    //make pid file
-    int fd = open(".monitor_pid", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    // create pid file
+    fd = open(".monitor_pid", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd < 0) {
-        printf("ERROR: Could not create .monitor_pid\n");
+        printf(C_ERROR "ERROR: Could not create .monitor_pid\n" RESET);
         exit(2);
     }
 
-    char pid_str[32];
-    snprintf(pid_str, sizeof(pid_str), "%d\n", getpid());
+    sprintf(pid_str, "%d\n", getpid());
     write(fd, pid_str, strlen(pid_str));
     close(fd);
 
-    printf("INFO: Monitor started with PID: %d\n", getpid());
+    printf(C_FILTER "INFO: Monitor started with PID: %d\n" RESET , getpid());
+    fflush(stdout); 
 
-    set_handler(SIGINT, monitor_ends);
-    set_handler(SIGUSR1, monitor_writes);
+    // setup sigint handler
+    sa_int.sa_handler = monitor_ends;
+    sa_int.sa_flags = 0;
+    sigemptyset(&sa_int.sa_mask);
+    if (sigaction(SIGINT, &sa_int, NULL) < 0) {
+        printf("sigaction error\n");
+        exit(3);
+    }
 
-    while(1) {
+    // setup sigusr1 handler
+    sa_usr.sa_handler = monitor_writes;
+    sa_usr.sa_flags = 0;
+    sigemptyset(&sa_usr.sa_mask);
+    if (sigaction(SIGUSR1, &sa_usr, NULL) < 0) {
+        printf("sigaction error\n");
+        exit(4);
+    }
+
+    while (1) {
         pause();
     }
+
     return 0;
 }
