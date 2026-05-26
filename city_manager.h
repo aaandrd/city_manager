@@ -53,4 +53,10 @@ int notify_monitor();
 #define C_VIEW             "\033[38;2;255;154;172m" // Pink
 #define C_FILTER           "\033[38;2;250;237;120m" // Yellow
 
+
+#define C_ERROR     "\033[31m" // Standard Red
+#define C_SUCCESS   "\033[32m" // Standard Green
+#define C_WARN      "\033[33m" // Standard Yellow
+#define C_INFO      "\033[36m" // Standard Cyan
+
 #endif //CITY_MANAGER_CITY_MANAGER_H
